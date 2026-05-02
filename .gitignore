@@ -1,0 +1,24 @@
+# ENAA リファレンス資料は再配布しない方針 → 利用者が公式サイトから取得して配置
+reference/ENAA/*
+!reference/ENAA/README.md
+
+# 利用者の機密データ（自社業務リスト・既存システム設計書・取引情報など）
+inputs/*
+!inputs/README.md
+
+# 生成物の取り扱い
+# outputs/* はデフォルト追跡（案件によって機密が混じる場合は個別 ignore）
+# outputs/<機密案件名>/*
+
+# キャッシュ（v0.2 メモリキャッシュ実装、自動再生成されるので追跡対象外）
+outputs/.cache/
+
+# Python キャッシュ
+__pycache__/
+*.pyc
+
+# OS / Editor 一時ファイル
+.DS_Store
+Thumbs.db
+*.swp
+*~
