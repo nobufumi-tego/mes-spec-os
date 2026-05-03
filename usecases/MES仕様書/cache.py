@@ -188,6 +188,46 @@ def get_custom_rows(cache: Dict[str, Any]) -> List[Dict[str, Any]]:
     return [r for r in cache['rows'] if r.get('_custom')]
 
 
+# === MES対象 4 値分類（出典: ENAA G25-029-1 P9-10 表 3-2）===
+
+# ENAA 表記の異体字（〇/○）と意味の対応
+MES_TARGET_ON = {'〇', '○', 'O'}     # 対象（MES でやる）
+MES_TARGET_PARTIAL = {'△'}           # 対象の場合あり
+MES_TARGET_OFF = {'×'}               # 対象外
+MES_TARGET_REFERENCE = {'※'}         # 別 Division 参照
+
+
+def classify_mes_target(value: Any) -> str:
+    """MES対象記号を 4 値分類のキーへ正規化
+
+    Returns:
+        'on' | 'partial' | 'off' | 'reference' | 'unknown'
+    """
+    s = (str(value).strip() if value is not None else '')
+    if s in MES_TARGET_ON:
+        return 'on'
+    if s in MES_TARGET_PARTIAL:
+        return 'partial'
+    if s in MES_TARGET_OFF:
+        return 'off'
+    if s in MES_TARGET_REFERENCE:
+        return 'reference'
+    return 'unknown'
+
+
+def count_mes_targets(rows: List[Dict[str, Any]]) -> Dict[str, int]:
+    """行リストの MES対象記号を 4 値で集計
+
+    Returns:
+        {'on': int, 'partial': int, 'off': int, 'reference': int, 'unknown': int, 'total': int}
+    """
+    counts = {'on': 0, 'partial': 0, 'off': 0, 'reference': 0, 'unknown': 0}
+    for r in rows:
+        counts[classify_mes_target(r.get('MES対象'))] += 1
+    counts['total'] = sum(counts[k] for k in ('on', 'partial', 'off', 'reference', 'unknown'))
+    return counts
+
+
 if __name__ == '__main__':
     # 動作確認用: python cache.py で実行するとメタ情報を表示
     import sys

@@ -27,7 +27,7 @@ Layer 1: Read-only DB    reference/ENAA/*.xlsx, *.pdf
   - 配置確認 → R0 を最初に実行
   - 不備があれば `core/rules.md` の「ENAA 資料の状態確認とフォールバック」へ
 - `uv` が利用可能（依存パッケージは `--with` で都度取得）
-- 本ファイルは private 開発時の path を使用：`reference/ENAA/...`
+- 本ファイルは現在のリポジトリ構造に合わせて `reference/ENAA/...` を使用
   - public 昇格時は `reference/ENAA/...` に置換
 
 ## 共通の実行パターン
@@ -59,7 +59,7 @@ Excel 系レシピ（R1-R5）は `cache.py` 経由でキャッシュ済みデー
 **自動無効化**: ENAA Excel の mtime と size を `_meta` に保存、次回呼び出し時に照合
 **API**: `from cache import get_cache, filter_by_division, filter_by_subbc, get_by_id, has_custom_data, get_custom_rows`
 
-レシピのパス前提（`usecases/MES仕様書` を sys.path に追加）は private 開発時の path。public 昇格時は `usecases/MES仕様書` に置換する。
+レシピは `usecases/MES仕様書` を sys.path に追加してから cache.py をインポートする前提。
 
 ---
 
@@ -114,29 +114,27 @@ print(json.dumps({'configured': all_ok, 'present': present, 'version': version},
 
 **前提**: R0 が `configured: true` を返している。
 
-**コマンド**:
+**コマンド**（v0.2.1〜：MES対象記号 4 値対応）:
 
 ```bash
 PYTHONIOENCODING=utf-8 uv run --with openpyxl --no-project python -c "
 import sys, json
 sys.path.insert(0, 'usecases/MES仕様書')
-from cache import get_cache
+from cache import get_cache, classify_mes_target
 from collections import OrderedDict
 cache = get_cache()
 divs = OrderedDict()
 for row in cache['rows']:
     div = row['Division']
-    d = divs.setdefault(div, {'total': 0, 'mes_on': 0, 'mes_off': 0, 'BCs': OrderedDict()})
+    d = divs.setdefault(div, {'total': 0, 'on': 0, 'partial': 0, 'off': 0, 'reference': 0, 'BCs': OrderedDict()})
     d['total'] += 1
-    mes = row.get('MES対象') or ''
-    if mes in ('○','〇','O'): d['mes_on'] += 1
-    elif mes == '×': d['mes_off'] += 1
+    cat = classify_mes_target(row.get('MES対象'))
+    if cat in d: d[cat] += 1
     bc = row.get('BC')
     if bc:
-        bcd = d['BCs'].setdefault(bc, {'total': 0, 'mes_on': 0, 'mes_off': 0})
+        bcd = d['BCs'].setdefault(bc, {'total': 0, 'on': 0, 'partial': 0, 'off': 0, 'reference': 0})
         bcd['total'] += 1
-        if mes in ('○','〇','O'): bcd['mes_on'] += 1
-        elif mes == '×': bcd['mes_off'] += 1
+        if cat in bcd: bcd[cat] += 1
 print(json.dumps(divs, ensure_ascii=False, indent=2))
 "
 ```
@@ -147,23 +145,33 @@ print(json.dumps(divs, ensure_ascii=False, indent=2))
 {
   "生産管理": {
     "total": 30,
-    "mes_on": 13,
-    "mes_off": 16,
-    "BCs": {
-      "生産計画立案": {"total": 15, "mes_on": 0, "mes_off": 13},
-      "製造指図発行": {"total": 3, "mes_on": 3, "mes_off": 0}
-    }
+    "on": 13,
+    "partial": 0,
+    "off": 16,
+    "reference": 0,
+    "BCs": { ... }
   },
   "製造": {
     "total": 78,
-    "mes_on": 78,
-    "mes_off": 0,
+    "on": 78,
+    "partial": 0,
+    "off": 0,
+    "reference": 0,
     "BCs": { ... }
   }
 }
 ```
 
-**MES 対象比率順**: Claude は `mes_on / total` で降順ソートして「中核（80% 以上）→ 中間（40-80%）→ 周辺（40% 未満）」のグループ分けを行う。
+**ENAA MES対象記号 4 値の意味**（出典: ENAA G25-029-1 P9-10 表 3-2）:
+
+| キー | ENAA 記号 | 意味 |
+|---|:---:|---|
+| `on` | ○ | MES/MOM で対応可能（必須対象） |
+| `partial` | △ | 対象の場合あり（任意） |
+| `off` | × | MES では対象としない |
+| `reference` | ※ | 別 Division で記載（重複参照） |
+
+**MES 対象比率順**: Claude は `(on + partial * 0.5) / total` で重み付けソートし、「中核（70% 以上）→ 中間（30-70%）→ 周辺（30% 未満）」のグループ分けを行う。partial を 0.5 重みで含めるのは、△ も部分的に MES 対象であるため。
 
 ---
 
