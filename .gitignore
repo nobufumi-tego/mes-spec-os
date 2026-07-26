@@ -6,12 +6,15 @@ reference/ENAA/*
 inputs/*
 !inputs/README.md
 
-# 生成物の取り扱い
-# outputs/* はデフォルト追跡（案件によって機密が混じる場合は個別 ignore）
-# outputs/<機密案件名>/*
-
-# キャッシュ（v0.2 メモリキャッシュ実装、自動再生成されるので追跡対象外）
-outputs/.cache/
+# 生成物の取り扱い：実生成資料は git 外（ホワイトリスト方式）
+# outputs/ 配下はサンプルと README のみ追跡。利用者が生成した仕様書は
+# 機密（顧客名・ライン構成・原価等）を含み得るため、デフォルトで追跡しない
+outputs/*
+!outputs/README.md
+!outputs/MES仕様書/
+outputs/MES仕様書/*
+!outputs/MES仕様書/20260502_マルヨシ精工_MES導入仕様書.md
+!outputs/MES仕様書/20260502_マルヨシ精工_MES導入仕様書.yaml
 
 # Python キャッシュ
 __pycache__/

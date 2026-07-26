@@ -98,6 +98,7 @@ https://www.enaa.or.jp/research/smart/mes
 
 - 作業の節目で `/保存` を案内する（業務改善OS の運用パターンを踏襲）
 - `inputs/` `reference/ENAA/` 配下のファイル本体は `git add` しない
+- `outputs/` の実生成資料は `.gitignore` で除外済み（追跡はサンプルのみ）。生成物の世代管理は git ではなく **ファイル名方式**（`outputs/MES仕様書/履歴/` への版番号付きコピー。`commands/MES仕様書.md` の保存方針参照）で行う。git ホワイトリスト追加は利用者が明示的に希望した場合のみ案内する上級者向けの例外
 
 ## 詳しい振る舞いルール
 
