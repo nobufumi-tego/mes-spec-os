@@ -65,11 +65,9 @@
 
 ## ENAA 資料そのものに関する問い合わせ
 
-本プロジェクトの担当範囲外です。直接 ENAA へ：
+本プロジェクトの担当範囲外です。ENAA 公式ページをご参照ください：
 
-- MES プロジェクト直通：`enaa-mes (at) enaa.or.jp`
-- 一般問い合わせ：https://www.enaa.or.jp/inquiry
-- 電話：03-6441-2910（平日 9:00-17:30）
+- https://www.enaa.or.jp/research/smart/mes
 
 ## 商用利用について
 
