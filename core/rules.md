@@ -132,7 +132,28 @@ print(json.dumps(results, ensure_ascii=False))
 
 - カレントディレクトリがリポジトリのルートであることを前提にしたパス。それ以外なら glob のパスを調整する
 - `PYTHONIOENCODING=utf-8` は Windows 既定の cp932 で ENAA Copyright 記号が出力エラーになるのを回避するため必須
-- Excel（`.xlsx`）の自動識別は実装が複雑になるため、`reference/ENAA/` 直下に **期待名以外の `.xlsx` が 1 個だけ** あれば G25-029-2 と推定してよい。複数あれば利用者に確認
+
+Excel（`.xlsx`）も中身（シート名）から識別できる。期待名以外の `.xlsx` があれば以下を実行する：
+
+```bash
+PYTHONIOENCODING=utf-8 uv run --with openpyxl --no-project python -c "
+from openpyxl import load_workbook
+import os, glob, json
+results = {}
+for f in sorted(glob.glob('reference/ENAA/*.xlsx')):
+    base = os.path.basename(f)
+    if base == 'mes_g25-029-2.xlsx': continue
+    try:
+        wb = load_workbook(f, read_only=True)
+        hit = any('MES標準業務機能リスト' in s for s in wb.sheetnames)
+        results[base] = '2' if hit else 'UNKNOWN'
+    except Exception:
+        results[base] = 'ERR'
+print(json.dumps(results, ensure_ascii=False))
+"
+```
+
+シート名に「MES標準業務機能リスト」を含めば G25-029-2（標準業務一覧 Excel 本体）と判定する。UNKNOWN が出た場合のみ、期待名以外の `.xlsx` が 1 個だけなら G25-029-2 と推定し、複数あれば利用者に確認
 
 ### Step 4: リネーム提案（必ず確認を取ってから実行）
 
